@@ -4,6 +4,7 @@ const cors = require('cors');
 const dav = require('dav');
 const ical = require('ical');
 const { RRule } = require('rrule');
+const serverless = require('serverless-http');
 
 const app = express();
 app.use(express.json());
@@ -20,7 +21,7 @@ if (!ICLOUD_ID || !ICLOUD_APP_PASSWORD) {
 // Кэш на 5 минут
 let cachedRawEvents = [];
 let lastFetch = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 минут
+const CACHE_TTL = 5 * 60 * 1000;
 
 async function fetchRawEventsFromiCloud() {
   const xhr = new dav.transport.Basic(
@@ -91,7 +92,6 @@ function expandEvent(ev, startDate, endDate) {
   return instances;
 }
 
-// API endpoint
 app.get('/api/freebusy', async (req, res) => {
   try {
     const { start, end } = req.query;
@@ -119,8 +119,6 @@ app.get('/api/freebusy', async (req, res) => {
   }
 });
 
-// Для Vercel
-const serverless = require('serverless-http');
 module.exports = app;
 module.exports.handler = serverless(app);
 
