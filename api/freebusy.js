@@ -92,7 +92,8 @@ function expandEvent(ev, startDate, endDate) {
   return instances;
 }
 
-app.get('/api/freebusy', async (req, res) => {
+// Обработчик для Serverless
+app.get('/', async (req, res) => {
   try {
     const { start, end } = req.query;
     if (!start || !end) {
