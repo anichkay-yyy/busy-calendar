@@ -1,31 +1,21 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const dav = require('dav');
-const ical = require('ical');
-const { RRule } = require('rrule');
-const path = require('path');
-
-const app = express();
-app.use(express.json());
-app.use(cors());
-
-app.use(express.static(path.join(__dirname, 'public')));
+// api/freebusy.js
+import 'dotenv/config';
+import dav from 'dav';
+import ical from 'ical';
+import { RRule } from 'rrule';
 
 const ICLOUD_ID = process.env.ICLOUD_ID;
 const ICLOUD_APP_PASSWORD = process.env.ICLOUD_APP_PASSWORD;
 
 if (!ICLOUD_ID || !ICLOUD_APP_PASSWORD) {
-  console.error("ICLOUD_ID or ICLOUD_APP_PASSWORD not set in .env");
-  process.exit(1);
+  throw new Error("ICLOUD_ID or ICLOUD_APP_PASSWORD not set in .env");
 }
 
-// Кэш на 5 минут
+// Кэш на 5 минут (в памяти функции, может сбрасываться между вызовами)
 let cachedRawEvents = [];
 let lastFetch = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 минут
 
-// Получение событий без разворачивания RRULE
 async function fetchRawEventsFromiCloud() {
   const xhr = new dav.transport.Basic(
     new dav.Credentials({ username: ICLOUD_ID, password: ICLOUD_APP_PASSWORD })
@@ -48,7 +38,9 @@ async function fetchRawEventsFromiCloud() {
         if (Buffer.isBuffer(obj.data)) icsString = obj.data.toString();
         else if (typeof obj.data === 'string') icsString = obj.data;
         else if (obj.data?.props)
-          icsString = Object.values(obj.data.props).find(v => typeof v === 'string' && v.startsWith('BEGIN:VCALENDAR'));
+          icsString = Object.values(obj.data.props).find(
+            v => typeof v === 'string' && v.startsWith('BEGIN:VCALENDAR')
+          );
 
         if (!icsString) continue;
 
@@ -68,7 +60,6 @@ async function fetchRawEventsFromiCloud() {
   return events;
 }
 
-// Разворачивание одного события на заданный диапазон
 function expandEvent(ev, startDate, endDate) {
   const instances = [];
 
@@ -80,11 +71,10 @@ function expandEvent(ev, startDate, endDate) {
       instances.push({
         start: new Date(dt).toISOString(),
         end: new Date(dt.getTime() + duration).toISOString(),
-        title:  'Busy'
+        title: 'Busy'
       });
     });
   } else {
-    // обычное одноразовое событие
     if (ev.end >= startDate && ev.start <= endDate) {
       instances.push({
         start: ev.start.toISOString(),
@@ -97,8 +87,11 @@ function expandEvent(ev, startDate, endDate) {
   return instances;
 }
 
-// API /api/freebusy
-app.get('/api/freebusy', async (req, res) => {
+export default async function handler(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
     const { start, end } = req.query;
     if (!start || !end) {
@@ -108,7 +101,7 @@ app.get('/api/freebusy', async (req, res) => {
     const startDate = new Date(start);
     const endDate = new Date(end);
 
-    // обновляем кэш если устарел
+    // обновляем кэш, если устарел
     if (Date.now() - lastFetch > CACHE_TTL) {
       cachedRawEvents = await fetchRawEventsFromiCloud();
       lastFetch = Date.now();
@@ -119,13 +112,10 @@ app.get('/api/freebusy', async (req, res) => {
       busy.push(...expandEvent(ev, startDate, endDate));
     });
 
-    res.json({ busy });
+    res.status(200).json({ busy });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'failed to fetch events', detail: err.message });
   }
-});
+}
 
-app.listen(process.env.PORT || 3000, () => {
-  console.log(`Server running on port ${process.env.PORT || 3000}`);
-});
