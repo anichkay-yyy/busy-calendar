@@ -1,17 +1,23 @@
-// api/freebusy.js
-import 'dotenv/config';
-import dav from 'dav';
-import ical from 'ical';
-import { RRule } from 'rrule';
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const dav = require('dav');
+const ical = require('ical');
+const { RRule } = require('rrule');
+
+const app = express();
+app.use(express.json());
+app.use(cors());
 
 const ICLOUD_ID = process.env.ICLOUD_ID;
 const ICLOUD_APP_PASSWORD = process.env.ICLOUD_APP_PASSWORD;
 
 if (!ICLOUD_ID || !ICLOUD_APP_PASSWORD) {
-  throw new Error("ICLOUD_ID or ICLOUD_APP_PASSWORD not set in .env");
+  console.error("ICLOUD_ID or ICLOUD_APP_PASSWORD not set in .env");
+  process.exit(1);
 }
 
-// Кэш на 5 минут (в памяти функции, может сбрасываться между вызовами)
+// Кэш на 5 минут
 let cachedRawEvents = [];
 let lastFetch = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 минут
@@ -38,9 +44,7 @@ async function fetchRawEventsFromiCloud() {
         if (Buffer.isBuffer(obj.data)) icsString = obj.data.toString();
         else if (typeof obj.data === 'string') icsString = obj.data;
         else if (obj.data?.props)
-          icsString = Object.values(obj.data.props).find(
-            v => typeof v === 'string' && v.startsWith('BEGIN:VCALENDAR')
-          );
+          icsString = Object.values(obj.data.props).find(v => typeof v === 'string' && v.startsWith('BEGIN:VCALENDAR'));
 
         if (!icsString) continue;
 
@@ -87,11 +91,8 @@ function expandEvent(ev, startDate, endDate) {
   return instances;
 }
 
-export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
+// API endpoint
+app.get('/api/freebusy', async (req, res) => {
   try {
     const { start, end } = req.query;
     if (!start || !end) {
@@ -101,7 +102,6 @@ export default async function handler(req, res) {
     const startDate = new Date(start);
     const endDate = new Date(end);
 
-    // обновляем кэш, если устарел
     if (Date.now() - lastFetch > CACHE_TTL) {
       cachedRawEvents = await fetchRawEventsFromiCloud();
       lastFetch = Date.now();
@@ -112,10 +112,15 @@ export default async function handler(req, res) {
       busy.push(...expandEvent(ev, startDate, endDate));
     });
 
-    res.status(200).json({ busy });
+    res.json({ busy });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'failed to fetch events', detail: err.message });
   }
-}
+});
+
+// Для Vercel
+const serverless = require('serverless-http');
+module.exports = app;
+module.exports.handler = serverless(app);
 
