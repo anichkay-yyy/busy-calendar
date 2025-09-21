@@ -1,0 +1,15 @@
+general:
+  name: Anichkay Cal
+  short_name: Anichkay Cal
+  description: Calendar
+  start_url: /
+  lang: ru
+  display: standalone
+  orientation: any
+  background_color: "#0F172A"
+  theme_color: "#1E3A8A"
+icons:
+  icon: ./icon.png
+  icon_dir: ./public/icons/
+  icons_path: /icons/
+# If you want set more options in manifest, you can set there in the "general" tab of this config

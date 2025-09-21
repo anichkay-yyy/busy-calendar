@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Календарь занятости</title>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/ru.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+      background-color: #0f172a;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+    header {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      padding: 15px 0;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #334155;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    h1 { margin: 0; color: #e2e8f0; font-size: 24px; }
+
+    button {
+      background-color: #1e40af;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    button:hover { background-color: #1e3a8a; }
+
+    #calendar {
+      background-color: #1e293b;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      padding: 16px;
+    }
+
+    /* FullCalendar dark theme */
+    .fc { color: #e2e8f0; }
+    .fc-toolbar-title { color: #e2e8f0; font-weight: 600; }
+    .fc-col-header-cell { background-color: #1e293b; color: #e2e8f0; border-color: #334155; }
+    .fc-day { background-color: #1e293b; border-color: #334155; }
+    .fc-daygrid-day-number { color: #e2e8f0; }
+    .fc-event { background-color: #ef4444; border: none; padding: 2px 4px; border-radius: 3px; cursor: pointer; display: flex; flex-direction: column; white-space: normal; word-break: break-word; }
+    .fc-event-title { font-weight: 500; white-space: normal; word-break: break-word; line-height: 1.1; }
+    .fc-event-time { font-weight: 400; white-space: normal; word-break: break-word; line-height: 1.1; }
+    .fc-day-today { background-color: #10142b !important; }
+    .fc-button { background-color: #1e40af; border: none; }
+    .fc-button:hover { background-color: #1e3a8a; }
+    .fc-button-primary:not(:disabled).fc-button-active { background-color: #1e3a8a; }
+
+    .status-indicator { display: flex; align-items: center; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+    .status-color { width: 20px; height: 20px; border-radius: 4px; }
+    .busy { background-color: #ef4444; }
+    .free { background-color: #22c55e; }
+
+    .loading { opacity: 0.7; pointer-events: none; }
+
+    .event-details {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 20px;
+      z-index: 1000;
+      max-width: 400px;
+      width: 90%;
+    }
+
+    .event-details h3 { margin-top: 0; color: #e2e8f0; }
+    .event-details p { margin: 8px 0; color: #cbd5e1; }
+    .close-btn { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #e2e8f0; font-size: 20px; cursor: pointer; }
+
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 999;
+    }
+
+    /* Адаптив для планшетов */
+    @media (max-width: 768px) {
+      header { flex-direction: column; align-items: flex-start; }
+      button { padding: 6px 10px; font-size: 14px; }
+      #calendar { padding: 8px; }
+      .fc .fc-daygrid-day-number,
+      .fc .fc-col-header-cell-cushion,
+      .fc .fc-event-title,
+      .fc .fc-event-time {
+        font-size: 12px;
+      }
+      .fc .fc-event { padding: 1px 2px; }
+    }
+
+    /* Адаптив для телефонов */
+    @media (max-width: 480px) {
+      h1 { font-size: 20px; }
+      .fc .fc-daygrid-day-number,
+      .fc .fc-col-header-cell-cushion { font-size: 10px; }
+
+      .fc .fc-event {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 2px 3px !important;
+        white-space: normal !important;
+        word-break: break-word;
+      }
+      .fc .fc-event-title {
+        font-size: 10px !important;
+        line-height: 1.2;
+        white-space: normal !important;
+        word-break: break-word;
+      }
+      .fc .fc-event-time {
+        font-size: 9px !important;
+        line-height: 1.2;
+        white-space: normal !important;
+        word-break: break-word;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <button id="prevBtn">&lt; Предыдущая</button>
+    <button id="nextBtn">Следующая &gt;</button>
+    <button id="weekView">Неделя</button>
+    <button id="dayView">День</button>
+  </header>
+
+  <div id="calendar"></div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="event-details" id="eventDetails">
+  <button class="close-btn" id="closeDetails">&times;</button>
+  <h3 id="detailTitle"></h3>
+  <p id="detailTime"></p>
+  <p id="detailLocation"></p>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    const eventDetails = document.getElementById('eventDetails');
+    const overlay = document.getElementById('overlay');
+    const closeDetails = document.getElementById('closeDetails');
+    const detailTitle = document.getElementById('detailTitle');
+    const detailTime = document.getElementById('detailTime');
+    const detailLocation = document.getElementById('detailLocation');
+
+    let currentView = 'timeGridWeek';
+    let eventsCache = [];
+    let cacheStart = null;
+    let cacheEnd = null;
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: currentView,
+      locale: 'ru',
+      headerToolbar: false,
+      firstDay: 1,
+      height: 'auto',
+      nowIndicator: true,
+      allDaySlot: false,
+      slotMinTime: '08:00:00',
+      slotMaxTime: '24:00:00',
+      events: fetchEvents,
+      eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+      eventClick: function(info) {
+        const start = info.event.start;
+        const end = info.event.end;
+        detailTitle.textContent = info.event.title;
+        detailTime.textContent = `${start.toLocaleDateString('ru-RU')}, ${start.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})} - ${end.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}`;
+        detailLocation.textContent = info.event.extendedProps.location || 'Место не указано';
+        eventDetails.style.display = 'block';
+        overlay.style.display = 'block';
+      },
+      loading: function(isLoading) {
+        calendarEl.classList.toggle('loading', isLoading);
+      }
+    });
+
+    calendar.render();
+
+    function extractLocation(title) {
+      const match = title.match(/\(([^)]+)\)$/);
+      return match ? match[1] : '';
+    }
+
+    async function fetchEvents(fetchInfo, successCallback, failureCallback) {
+      const fetchStart = fetchInfo.start;
+      const fetchEnd = fetchInfo.end;
+
+      if (cacheStart && cacheEnd && fetchStart >= cacheStart && fetchEnd <= cacheEnd) {
+        const cached = eventsCache.filter(ev => new Date(ev.start) < fetchEnd && new Date(ev.end) > fetchStart);
+        successCallback(cached);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/freebusy?start=${fetchStart.toISOString()}&end=${fetchEnd.toISOString()}`);
+        const data = await res.json();
+        eventsCache = (data.busy || []).map(ev => ({
+          title: ev.title,
+          start: ev.start,
+          end: ev.end,
+          extendedProps: { location: extractLocation(ev.title) }
+        }));
+        cacheStart = fetchStart;
+        cacheEnd = fetchEnd;
+        successCallback(eventsCache);
+      } catch (err) {
+        console.error(err);
+        failureCallback(err);
+      }
+    }
+
+    document.getElementById('weekView').addEventListener('click', () => {
+      currentView = 'timeGridWeek';
+      calendar.changeView(currentView);
+    });
+    document.getElementById('dayView').addEventListener('click', () => {
+      currentView = 'timeGridDay';
+      calendar.changeView(currentView);
+    });
+    document.getElementById('prevBtn').addEventListener('click', () => calendar.prev());
+    document.getElementById('nextBtn').addEventListener('click', () => calendar.next());
+
+    closeDetails.addEventListener('click', () => { eventDetails.style.display = 'none'; overlay.style.display = 'none'; });
+    overlay.addEventListener('click', () => { eventDetails.style.display = 'none'; overlay.style.display = 'none'; });
+
+    setInterval(() => { cacheStart = null; cacheEnd = null; calendar.refetchEvents(); }, 300000);
+  });
+</script>
+</body>
+</html>
