@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('xmlhttprequest');
 const express = require('express');
 const cors = require('cors');
 const dav = require('dav');
