@@ -11,7 +11,7 @@ ICLOUD_APP_PASSWORD=...
 ## Change manifest (/public/manifest.webmanifest)
 Change fields: name, short_name.
 
-# Change /api/ignore.json.
+## Change /api/ignore.json.
 Add to the array the names of calendars that you wouldn't use for scheduling.
 My example: "Уник (скип)"
 
