@@ -43,7 +43,9 @@ async function fetchRawEventsFromiCloud() {
   const events = [];
 
   for (const cal of account.calendars) {
+  console.log(cal);
     for (const obj of cal.objects) {
+    console.log(obj);
       try {
         let icsString;
 
