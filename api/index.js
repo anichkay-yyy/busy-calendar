@@ -7,6 +7,8 @@ const ical = require('ical');
 const { RRule } = require('rrule');
 const path = require('path');
 const serverless = require('serverless-http');
+const ignore = require('./ignore.json');
+
 
 const app = express();
 app.use(express.json());
@@ -43,7 +45,16 @@ async function fetchRawEventsFromiCloud() {
   const events = [];
 
   for (const cal of account.calendars) {
-  console.log(cal.data.props.displayname);
+    let isIgnore = false;
+    for (const calendar of ignore) {
+        if (cal.data.props.displayname === calendar) {
+            isIgnore = true;
+            break;
+        }
+    }
+    if (isIgnore) {
+        continue;
+    }
     for (const obj of cal.objects) {
       try {
         let icsString;
