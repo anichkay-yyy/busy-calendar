@@ -5,6 +5,7 @@ const dav = require('dav');
 const ical = require('ical');
 const { RRule } = require('rrule');
 const path = require('path');
+const serverless = require('serverless-http');
 
 const app = express();
 app.use(express.json());
@@ -99,6 +100,7 @@ function expandEvent(ev, startDate, endDate) {
 
 // API /api/freebusy
 app.get('/api/freebusy', async (req, res) => {
+    console.log("req");
   try {
     const { start, end } = req.query;
     if (!start || !end) {
@@ -126,8 +128,9 @@ app.get('/api/freebusy', async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 3000, () => {
-  console.log(`Server running on port ${process.env.PORT || 3000}`);
-});
+//app.listen(process.env.PORT || 3000, () => {
+  //console.log(`Server running on port ${process.env.PORT || 3000}`);
+//});
 
-export default app;
+module.exports = app;
+module.exports.handler = serverless(app);
