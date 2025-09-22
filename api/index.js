@@ -43,9 +43,8 @@ async function fetchRawEventsFromiCloud() {
   const events = [];
 
   for (const cal of account.calendars) {
-  console.log(cal);
+  console.log(cal.data.props.displayname);
     for (const obj of cal.objects) {
-    console.log(obj);
       try {
         let icsString;
 
@@ -103,7 +102,6 @@ function expandEvent(ev, startDate, endDate) {
 
 // API /api/freebusy
 app.get('/api/freebusy', async (req, res) => {
-    console.log("req");
   try {
     const { start, end } = req.query;
     if (!start || !end) {
